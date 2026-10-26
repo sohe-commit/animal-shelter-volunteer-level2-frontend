@@ -103,6 +103,27 @@ export default function MyApplicationsPage() {
 
         {result?.found && (
           <>
+            {result.monthly.length > 0 && (
+              <section className="rounded-xl border border-stone-200 bg-white p-4">
+                <h2 className="font-bold text-stone-900">월별 봉사 기록</h2>
+                <p className="mt-0.5 text-xs text-stone-500">
+                  봉사 횟수 / 신청 횟수. 취소한 신청은 세지 않고, 봉사 날짜가 지난 신청을 봉사한 것으로 셉니다.
+                </p>
+                <ul className="mt-3 flex flex-wrap gap-2">
+                  {result.monthly.map((m) => (
+                    <li key={m.month} className="rounded-lg bg-stone-50 px-4 py-2">
+                      <p className="text-sm text-stone-600">
+                        {m.month.slice(0, 4)}년 {Number(m.month.slice(5, 7))}월
+                      </p>
+                      <p className="text-lg font-bold text-stone-900">
+                        봉사 {m.servedCount}회 <span className="font-normal text-stone-400">/</span> 신청 {m.appliedCount}회
+                      </p>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
+
             <WeekPicker weeks={result.weeks} value={week} onChange={setWeek} detail={(w) => `${w.used}/2회 사용`} />
 
             {selectedWeek && (

@@ -1,3 +1,5 @@
+import { getStaffPassword, setStaffPassword } from "./staff";
+
 // 백엔드(NestJS) 주소. frontend/.env.local의 NEXT_PUBLIC_API_URL에서 읽는다.
 export const API_URL = (process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000").replace(/\/$/, "");
 
@@ -61,9 +63,17 @@ export interface WeekUsage extends Week {
   remaining: number;
 }
 
+/** 월별 기록: 신청 횟수(취소 제외)와 그중 봉사 날짜가 지난 봉사 횟수 */
+export interface MonthlyRecord {
+  month: string;
+  appliedCount: number;
+  servedCount: number;
+}
+
 export interface LookupResult {
   found: boolean;
   weeks: WeekUsage[];
+  monthly: MonthlyRecord[];
   applications: MyApplication[];
 }
 
@@ -79,11 +89,16 @@ export class ApiError extends Error {}
 
 /** 백엔드를 부르고, 실패하면 서버가 보낸 안내 문구를 담은 ApiError를 던진다. */
 export async function api<T>(path: string, init?: { method?: string; body?: unknown }): Promise<T> {
+  const headers: Record<string, string> = {};
+  if (init?.body !== undefined) headers["Content-Type"] = "application/json";
+  const staffPassword = getStaffPassword();
+  if (staffPassword) headers["X-Staff-Password"] = staffPassword;
+
   let response: Response;
   try {
     response = await fetch(`${API_URL}${path}`, {
       method: init?.method ?? "GET",
-      headers: init?.body === undefined ? undefined : { "Content-Type": "application/json" },
+      headers,
       body: init?.body === undefined ? undefined : JSON.stringify(init.body),
       cache: "no-store",
     });
@@ -91,6 +106,8 @@ export async function api<T>(path: string, init?: { method?: string; body?: unkn
     throw new ApiError("서버에 연결할 수 없어요. 잠시 후 다시 시도해 주세요.");
   }
   const data = await response.json().catch(() => null);
+  // 담당자 비밀번호가 바뀌었거나 틀리면 담당자 모드를 끈다.
+  if (response.status === 401 && data?.code === "STAFF_REQUIRED") setStaffPassword(null);
   if (!response.ok) {
     const message = Array.isArray(data?.message) ? data.message[0] : data?.message;
     throw new ApiError(message || "요청을 처리하지 못했어요. 잠시 후 다시 시도해 주세요.");
