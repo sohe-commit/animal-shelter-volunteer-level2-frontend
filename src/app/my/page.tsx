@@ -4,7 +4,8 @@ import Link from "next/link";
 import { useState, type FormEvent } from "react";
 import { ActivityBadge, Field, Notice, PageTitle, buttonClass, inputClass, secondaryButtonClass } from "@/components/ui";
 import { api, errorMessage, type LookupResult, type MyApplication } from "@/lib/api";
-import { formatDate, formatDateTime, formatShortDate } from "@/lib/format";
+import { WeekPicker } from "@/components/week-picker";
+import { formatDate, formatDateTime, formatPhoneInput, formatShortDate, weekLabel } from "@/lib/format";
 
 export default function MyApplicationsPage() {
   const [name, setName] = useState("");
@@ -12,6 +13,8 @@ export default function MyApplicationsPage() {
   // 취소할 때도 신청자 확인(R6)에 쓰도록, 조회에 성공한 이름과 전화번호를 기억해 둔다.
   const [identity, setIdentity] = useState<{ name: string; phone: string } | null>(null);
   const [result, setResult] = useState<LookupResult | null>(null);
+  // 보고 있는 주(일요일 날짜). ""이면 전체. 처음 찾으면 이번 주를 보여 준다.
+  const [week, setWeek] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
@@ -23,19 +26,27 @@ export default function MyApplicationsPage() {
       const data = await api<LookupResult>("/applications/lookup", { method: "POST", body: who });
       setResult(data);
       setIdentity(who);
+      return data;
     } catch (err) {
       setResult(null);
       setError(errorMessage(err));
+      return null;
     } finally {
       setLoading(false);
     }
   };
 
-  const submit = (e: FormEvent) => {
+  const submit = async (e: FormEvent) => {
     e.preventDefault();
     setMessage("");
-    void lookup({ name, phone });
+    const data = await lookup({ name, phone });
+    if (data) setWeek(data.weeks[0]?.start ?? "");
   };
+
+  const weekIndex = result?.weeks.findIndex((w) => w.start === week) ?? -1;
+  const selectedWeek = weekIndex >= 0 ? result?.weeks[weekIndex] : undefined;
+  const shown = result?.applications.filter((a) => !week || a.weekStart === week) ?? [];
+  const others = result?.applications.filter((a) => week && a.weekStart !== week) ?? [];
 
   const cancel = async (application: MyApplication) => {
     if (!identity) return;
@@ -64,7 +75,15 @@ export default function MyApplicationsPage() {
           <input value={name} onChange={(e) => setName(e.target.value)} className={inputClass} placeholder="김봉사" autoComplete="off" />
         </Field>
         <Field label="전화번호">
-          <input value={phone} onChange={(e) => setPhone(e.target.value)} className={inputClass} placeholder="010-1234-5678" inputMode="tel" autoComplete="off" />
+          <input
+            value={phone}
+            onChange={(e) => setPhone(formatPhoneInput(e.target.value))}
+            className={inputClass}
+            placeholder="010-1234-5678"
+            inputMode="numeric"
+            maxLength={13}
+            autoComplete="off"
+          />
         </Field>
         <button type="submit" disabled={loading} className={buttonClass}>
           {loading ? "찾는 중…" : "찾기"}
@@ -84,21 +103,28 @@ export default function MyApplicationsPage() {
 
         {result?.found && (
           <>
-            <div className="rounded-xl border border-orange-200 bg-orange-50 p-4">
-              <p className="text-sm text-orange-900">
-                이번 주({formatShortDate(result.week.start)}~{formatShortDate(result.week.end)}) 신청 횟수
-              </p>
-              <p className="mt-1 text-xl font-bold text-orange-900">
-                2회 중 {result.week.used}회 사용 · <span className="text-orange-700">{result.week.remaining}회 남음</span>
-              </p>
-              <p className="mt-1 text-xs text-orange-800">취소한 신청은 2번까지 세지 않아요. 3번째 취소부터는 1회로 셉니다.</p>
-            </div>
+            <WeekPicker weeks={result.weeks} value={week} onChange={setWeek} detail={(w) => `${w.used}/2회 사용`} />
 
-            {result.applications.length === 0 ? (
-              <Notice tone="info">아직 신청한 봉사가 없어요.</Notice>
+            {selectedWeek && (
+              <div className="rounded-xl border border-orange-200 bg-orange-50 p-4">
+                <p className="text-sm text-orange-900">
+                  {weekLabel(weekIndex)}({formatShortDate(selectedWeek.start)}~{formatShortDate(selectedWeek.end)}) 신청 횟수
+                </p>
+                <p className="mt-1 text-xl font-bold text-orange-900">
+                  2회 중 {selectedWeek.used}회 사용 ·{" "}
+                  <span className="text-orange-700">
+                    {selectedWeek.remaining > 0 ? `${selectedWeek.remaining}회 남음` : "더 신청할 수 없어요"}
+                  </span>
+                </p>
+                <p className="mt-1 text-xs text-orange-800">취소한 신청은 2번까지 세지 않아요. 3번째 취소부터는 1회로 셉니다.</p>
+              </div>
+            )}
+
+            {shown.length === 0 ? (
+              <Notice tone="info">{week ? "이 주에 신청한 봉사가 없어요." : "아직 신청한 봉사가 없어요."}</Notice>
             ) : (
               <ul className="divide-y divide-stone-200 overflow-hidden rounded-xl border border-stone-200 bg-white">
-                {result.applications.map((a) => (
+                {shown.map((a) => (
                   <li key={a.id} className="flex flex-wrap items-center gap-3 p-4">
                     <ActivityBadge name={a.activityName} />
                     <div className="min-w-0 flex-1">
@@ -111,6 +137,17 @@ export default function MyApplicationsPage() {
                   </li>
                 ))}
               </ul>
+            )}
+
+            {others.length > 0 && (
+              <p className="flex flex-wrap items-center gap-2 text-sm text-stone-600">
+                다른 주 신청 내역 <b className="text-stone-900">{others.length}건</b>
+                {others.some((a) => a.status === "cancelled") &&
+                  ` (신청됨 ${others.filter((a) => a.status === "applied").length}건 · 취소됨 ${others.filter((a) => a.status === "cancelled").length}건)`}
+                <button type="button" onClick={() => setWeek("")} className="font-semibold text-orange-700 underline">
+                  전체 보기
+                </button>
+              </p>
             )}
           </>
         )}

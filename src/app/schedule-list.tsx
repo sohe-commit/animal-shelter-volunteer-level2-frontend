@@ -3,12 +3,14 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { ActivityBadge, Field, Notice, inputClass, secondaryButtonClass } from "@/components/ui";
-import { api, errorMessage, type Activity, type Schedule } from "@/lib/api";
+import { WeekPicker } from "@/components/week-picker";
+import { api, errorMessage, type Activity, type Schedule, type WeekWithAvailability } from "@/lib/api";
 import { formatDate } from "@/lib/format";
 
 export default function ScheduleList() {
   const [activities, setActivities] = useState<Activity[]>([]);
-  const [date, setDate] = useState("");
+  const [weeks, setWeeks] = useState<WeekWithAvailability[]>([]);
+  const [week, setWeek] = useState("");
   const [activityId, setActivityId] = useState("");
   const [availableOnly, setAvailableOnly] = useState(false);
   const [schedules, setSchedules] = useState<Schedule[] | null>(null);
@@ -20,8 +22,12 @@ export default function ScheduleList() {
   }, []);
 
   useEffect(() => {
+    api<WeekWithAvailability[]>("/schedules/weeks").then(setWeeks).catch(() => setWeeks([]));
+  }, [reloadKey]);
+
+  useEffect(() => {
     const params = new URLSearchParams();
-    if (date) params.set("date", date);
+    if (week) params.set("week", week);
     if (activityId) params.set("activityId", activityId);
     if (availableOnly) params.set("available", "true");
     let ignore = false;
@@ -39,10 +45,10 @@ export default function ScheduleList() {
     return () => {
       ignore = true;
     };
-  }, [date, activityId, availableOnly, reloadKey]);
+  }, [week, activityId, availableOnly, reloadKey]);
 
   const resetFilters = () => {
-    setDate("");
+    setWeek("");
     setActivityId("");
     setAvailableOnly(false);
   };
@@ -54,10 +60,11 @@ export default function ScheduleList() {
 
   return (
     <div className="space-y-6">
-      <section className="grid gap-4 rounded-xl border border-stone-200 bg-white p-4 sm:grid-cols-[1fr_1fr_auto_auto] sm:items-end">
-        <Field label="날짜">
-          <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className={inputClass} />
-        </Field>
+      <section className="grid gap-4 rounded-xl border border-stone-200 bg-white p-4 sm:grid-cols-[1fr_auto_auto] sm:items-end">
+        <div className="sm:col-span-3">
+          <p className="mb-1 text-sm font-semibold text-stone-800">주 (한 주에 2번까지 신청할 수 있어요)</p>
+          <WeekPicker weeks={weeks} value={week} onChange={setWeek} detail={(w) => `신청 가능 ${w.availableCount}개`} />
+        </div>
         <Field label="활동 종류">
           <select value={activityId} onChange={(e) => setActivityId(e.target.value)} className={inputClass}>
             <option value="">전체</option>

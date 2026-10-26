@@ -42,11 +42,28 @@ export interface MyApplication {
   activityName: string;
   cancelDeadline: string;
   canCancel: boolean;
+  /** 봉사 날짜가 속한 주의 일요일 */
+  weekStart: string;
+}
+
+/** 화면에서 고를 수 있는 주 (일~토) */
+export interface Week {
+  start: string;
+  end: string;
+}
+
+export interface WeekWithAvailability extends Week {
+  availableCount: number;
+}
+
+export interface WeekUsage extends Week {
+  used: number;
+  remaining: number;
 }
 
 export interface LookupResult {
   found: boolean;
-  week: { start: string; end: string; used: number; remaining: number };
+  weeks: WeekUsage[];
   applications: MyApplication[];
 }
 

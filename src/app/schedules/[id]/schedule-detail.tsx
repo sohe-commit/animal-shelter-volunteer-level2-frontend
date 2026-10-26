@@ -4,7 +4,7 @@ import Link from "next/link";
 import { use, useCallback, useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { ActivityBadge, Field, Notice, buttonClass, inputClass } from "@/components/ui";
 import { api, errorMessage, type Schedule } from "@/lib/api";
-import { formatDate, formatDateTime } from "@/lib/format";
+import { formatDate, formatDateTime, formatPhoneInput } from "@/lib/format";
 
 export default function ScheduleDetail({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -129,10 +129,11 @@ function ApplyForm({ schedule: s, onApplied }: { schedule: Schedule; onApplied: 
           <Field label="전화번호" hint="이름과 전화번호로 내 신청을 찾고 취소할 수 있어요.">
             <input
               value={phone}
-              onChange={(e) => setPhone(e.target.value)}
+              onChange={(e) => setPhone(formatPhoneInput(e.target.value))}
               className={inputClass}
               placeholder="010-1234-5678"
-              inputMode="tel"
+              inputMode="numeric"
+              maxLength={13}
               autoComplete="off"
             />
           </Field>
