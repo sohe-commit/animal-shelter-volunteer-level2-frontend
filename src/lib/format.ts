@@ -87,3 +87,8 @@ export function serviceHours(startTime: string, endTime: string): number {
   const minutes = (t: string) => Number(t.slice(0, 2)) * 60 + Number(t.slice(3, 5));
   return Math.round(((minutes(endTime) - minutes(startTime)) / 60) * 10) / 10;
 }
+
+/** 2026-10-29 → 10/29 (목) */
+export function formatShortDay(date: string): string {
+  return `${formatShortDate(date)} (${WEEKDAYS[new Date(`${date}T00:00:00Z`).getUTCDay()]})`;
+}

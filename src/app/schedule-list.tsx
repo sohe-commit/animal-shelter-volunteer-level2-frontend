@@ -6,12 +6,14 @@ import { ArrowRightIcon, BadgeCheckIcon, BagIcon, CalendarIcon, ClockIcon, Heart
 import { ActivityBadge, CapacityBar, Notice, cardClass, secondaryButtonClass } from "@/components/ui";
 import { WeekPicker } from "@/components/week-picker";
 import { api, errorMessage, type Activity, type Schedule, type WeekWithAvailability } from "@/lib/api";
-import { activityEmoji, formatDate, serviceHours, todayKst } from "@/lib/format";
+import { activityEmoji, addDays, formatDate, formatShortDay, serviceHours, todayKst } from "@/lib/format";
 
 export default function ScheduleList() {
   const [activities, setActivities] = useState<Activity[]>([]);
   const [weeks, setWeeks] = useState<WeekWithAvailability[]>([]);
   const [week, setWeek] = useState("");
+  // 고른 주 안에서 하루만 보기 (YYYY-MM-DD). ""이면 그 주 전체
+  const [day, setDay] = useState("");
   const [activityId, setActivityId] = useState("");
   const [availableOnly, setAvailableOnly] = useState(false);
   const [schedules, setSchedules] = useState<Schedule[] | null>(null);
@@ -52,10 +54,19 @@ export default function ScheduleList() {
   }, [week, activityId, availableOnly, reloadKey]);
 
   const resetFilters = () => {
-    setWeek("");
+    chooseWeek("");
     setActivityId("");
     setAvailableOnly(false);
   };
+  // 주를 바꾸면 고른 날은 풀어 준다.
+  const chooseWeek = (start: string) => {
+    setWeek(start);
+    setDay("");
+  };
+  // 날짜 버튼: 고른 주의 일~토. 지금 보이는 일정(활동·신청 가능 조건 반영)이 그날 몇 개인지 함께 보여 준다.
+  const days = week ? Array.from({ length: 7 }, (_, i) => addDays(week, i)) : [];
+  const countOn = (date: string) => schedules?.filter((s) => s.date === date).length ?? 0;
+  const shown = day ? (schedules ?? []).filter((s) => s.date === day) : schedules;
   const availableThisWeek = weeks[0]?.availableCount;
   const availableTotal = weeks.reduce((sum, w) => sum + w.availableCount, 0);
 
@@ -100,9 +111,30 @@ export default function ScheduleList() {
       {/* 거르기 */}
       <section className="space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <WeekPicker weeks={weeks} value={week} onChange={setWeek} detail={(w) => `${w.availableCount}개 가능`} />
+          <WeekPicker weeks={weeks} value={week} onChange={chooseWeek} detail={(w) => `${w.availableCount}개 가능`} />
           <Toggle checked={availableOnly} onChange={setAvailableOnly} label="신청 가능한 것만 보기" />
         </div>
+        {week ? (
+          <div role="group" aria-label="날짜 고르기" className="flex flex-wrap gap-2">
+            <ActivityChip selected={day === ""} onClick={() => setDay("")}>
+              <CalendarIcon className="h-3.5 w-3.5" /> 이 주 전체
+            </ActivityChip>
+            {days.map((date) => {
+              const count = countOn(date);
+              const past = today !== "" && date <= today;
+              return (
+                <ActivityChip key={date} selected={day === date} onClick={() => setDay(date)} disabled={count === 0}>
+                  <span className={past && day !== date ? "text-stone-400" : ""}>{formatShortDay(date)}</span>
+                  <span className="text-xs font-medium opacity-70">{count === 0 ? "없음" : past ? "마감" : `${count}개`}</span>
+                </ActivityChip>
+              );
+            })}
+          </div>
+        ) : (
+          <p className="flex items-center gap-1.5 text-sm text-stone-500">
+            <CalendarIcon className="h-4 w-4" /> 위에서 주를 고르면 그 주의 하루만 골라 볼 수도 있어요.
+          </p>
+        )}
         <div role="group" aria-label="활동 고르기" className="flex flex-wrap gap-2">
           <ActivityChip selected={activityId === ""} onClick={() => setActivityId("")}>
             전체 활동
@@ -130,13 +162,13 @@ export default function ScheduleList() {
         </Notice>
       )}
 
-      {schedules === null ? (
+      {shown === null ? (
         <p className="text-stone-500">일정을 불러오는 중이에요… (무료 서버라 처음에는 30초쯤 걸릴 수 있어요)</p>
-      ) : schedules.length === 0 && !error ? (
-        <Notice tone="info">조건에 맞는 일정이 없어요. 다른 주나 활동을 골라 보세요.</Notice>
+      ) : shown.length === 0 && !error ? (
+        <Notice tone="info">조건에 맞는 일정이 없어요. 다른 주나 날짜, 활동을 골라 보세요.</Notice>
       ) : (
         <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {schedules.map((s) => (
+          {shown.map((s) => (
             <li key={s.id}>
               <ScheduleCard schedule={s} />
             </li>
@@ -197,14 +229,25 @@ function Toggle({ checked, onChange, label }: { checked: boolean; onChange: (v: 
   );
 }
 
-function ActivityChip({ selected, onClick, children }: { selected: boolean; onClick: () => void; children: ReactNode }) {
+function ActivityChip({
+  selected,
+  onClick,
+  disabled,
+  children,
+}: {
+  selected: boolean;
+  onClick: () => void;
+  disabled?: boolean;
+  children: ReactNode;
+}) {
   return (
     <button
       type="button"
       aria-pressed={selected}
       onClick={onClick}
-      className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-sm font-semibold transition ${
-        selected ? "bg-stone-800 text-white" : "border border-stone-200 bg-white text-stone-600 hover:text-stone-900"
+      disabled={disabled}
+      className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-40 ${
+        selected ? "bg-stone-800 text-white" : "border border-stone-200 bg-white text-stone-600 enabled:hover:text-stone-900"
       }`}
     >
       {children}
