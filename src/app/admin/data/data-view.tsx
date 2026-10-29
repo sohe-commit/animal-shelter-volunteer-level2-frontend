@@ -68,7 +68,7 @@ export default function DataView() {
         <section className="rounded-3xl border border-stone-200/70 bg-white shadow-[0_2px_20px_-8px_rgba(120,72,40,0.15)] p-6">
           <h2 className="text-lg font-bold text-stone-900">가상 데이터 다시 채우기</h2>
           <p className="mt-2 text-sm text-stone-600">
-            모든 일정·봉사자·신청을 지우고, 오늘을 기준으로 앞뒤 2주의 일정과 가상 봉사자 30명, 신청 약 120건을 다시 넣어요. 이름과
+            모든 일정·봉사자·신청을 지우고, 오늘을 기준으로 2주 전부터 다음다음 달 말일까지(10월에 누르면 12월 31일까지)의 일정과 가상 봉사자 30명, 신청 약 260건을 다시 넣어요. 이름과
             전화번호는 모두 지어낸 값이에요.
           </p>
           <button type="button" onClick={reset} disabled={resetting} className={`${buttonClass} mt-4`}>
