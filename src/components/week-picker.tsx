@@ -24,8 +24,13 @@ export function WeekPicker<W extends Week>({
       extra: detail?.(week) ?? "",
     })),
   ];
+  // 주가 많아도 한 줄로 두고 옆으로 넘겨 본다. 고른 주는 보이는 곳으로 끌어온다.
   return (
-    <div role="group" aria-label="주 고르기" className="flex flex-wrap gap-2">
+    <div
+      role="group"
+      aria-label="주 고르기 (옆으로 넘겨 더 보기)"
+      className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-2 [scrollbar-width:thin] sm:mx-0 sm:px-0"
+    >
       {options.map((option) => {
         const selected = value === option.key;
         return (
@@ -33,8 +38,11 @@ export function WeekPicker<W extends Week>({
             key={option.key || "all"}
             type="button"
             aria-pressed={selected}
-            onClick={() => onChange(option.key)}
-            className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold transition ${
+            onClick={(e) => {
+              onChange(option.key);
+              e.currentTarget.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+            }}
+            className={`inline-flex shrink-0 items-center gap-2 whitespace-nowrap rounded-full border px-4 py-2 text-sm font-semibold transition ${
               selected
                 ? "border-brand-600 bg-brand-600 text-white shadow-sm"
                 : "border-stone-200 bg-white text-stone-600 hover:border-brand-200 hover:text-stone-900"

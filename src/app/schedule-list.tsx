@@ -11,7 +11,9 @@ import { activityEmoji, addDays, formatDate, formatShortDay, serviceHours, today
 export default function ScheduleList() {
   const [activities, setActivities] = useState<Activity[]>([]);
   const [weeks, setWeeks] = useState<WeekWithAvailability[]>([]);
-  const [week, setWeek] = useState("");
+  // 보고 있는 주(일요일 날짜). ""이면 전체, null이면 아직 주 목록을 받기 전.
+  // 처음에는 이번 주를 보여 준다 (일정이 몇 달 치라 "전체"는 너무 길다).
+  const [week, setWeek] = useState<string | null>(null);
   // 고른 주 안에서 하루만 보기 (YYYY-MM-DD). ""이면 그 주 전체
   const [day, setDay] = useState("");
   const [activityId, setActivityId] = useState("");
@@ -28,10 +30,19 @@ export default function ScheduleList() {
   }, []);
 
   useEffect(() => {
-    api<WeekWithAvailability[]>("/schedules/weeks").then(setWeeks).catch(() => setWeeks([]));
+    api<WeekWithAvailability[]>("/schedules/weeks")
+      .then((rows) => {
+        setWeeks(rows);
+        setWeek((current) => current ?? rows[0]?.start ?? "");
+      })
+      .catch(() => {
+        setWeeks([]);
+        setWeek((current) => current ?? "");
+      });
   }, [reloadKey]);
 
   useEffect(() => {
+    if (week === null) return;
     const params = new URLSearchParams();
     if (week) params.set("week", week);
     if (activityId) params.set("activityId", activityId);
@@ -53,8 +64,9 @@ export default function ScheduleList() {
     };
   }, [week, activityId, availableOnly, reloadKey]);
 
+  const thisWeek = weeks[0]?.start ?? "";
   const resetFilters = () => {
-    chooseWeek("");
+    chooseWeek(thisWeek);
     setActivityId("");
     setAvailableOnly(false);
   };
@@ -66,7 +78,12 @@ export default function ScheduleList() {
   // 날짜 버튼: 고른 주의 일~토. 지금 보이는 일정(활동·신청 가능 조건 반영)이 그날 몇 개인지 함께 보여 준다.
   const days = week ? Array.from({ length: 7 }, (_, i) => addDays(week, i)) : [];
   const countOn = (date: string) => schedules?.filter((s) => s.date === date).length ?? 0;
-  const shown = day ? (schedules ?? []).filter((s) => s.date === day) : schedules;
+  // 하루를 고르지 않았으면 이미 지난 날은 빼고, 신청할 수 있는 일정을 앞에 둔다 (마감된 일정은 뒤로).
+  const shown = !schedules
+    ? null
+    : day
+      ? schedules.filter((s) => s.date === day)
+      : schedules.filter((s) => !today || s.date >= today).sort((a, b) => Number(b.canApply) - Number(a.canApply));
   const availableThisWeek = weeks[0]?.availableCount;
   const availableTotal = weeks.reduce((sum, w) => sum + w.availableCount, 0);
 
@@ -110,12 +127,9 @@ export default function ScheduleList() {
 
       {/* 거르기 */}
       <section className="space-y-4">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <WeekPicker weeks={weeks} value={week} onChange={chooseWeek} detail={(w) => `${w.availableCount}개 가능`} />
-          <Toggle checked={availableOnly} onChange={setAvailableOnly} label="신청 가능한 것만 보기" />
-        </div>
+        <WeekPicker weeks={weeks} value={week ?? ""} onChange={chooseWeek} detail={(w) => `${w.availableCount}개 가능`} />
         {week ? (
-          <div role="group" aria-label="날짜 고르기" className="flex flex-wrap gap-2">
+          <div role="group" aria-label="날짜 고르기" className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:thin] sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0">
             <ActivityChip selected={day === ""} onClick={() => setDay("")}>
               <CalendarIcon className="h-3.5 w-3.5" /> 이 주 전체
             </ActivityChip>
@@ -130,26 +144,29 @@ export default function ScheduleList() {
               );
             })}
           </div>
-        ) : (
+        ) : week === "" ? (
           <p className="flex items-center gap-1.5 text-sm text-stone-500">
             <CalendarIcon className="h-4 w-4" /> 위에서 주를 고르면 그 주의 하루만 골라 볼 수도 있어요.
           </p>
-        )}
-        <div role="group" aria-label="활동 고르기" className="flex flex-wrap gap-2">
-          <ActivityChip selected={activityId === ""} onClick={() => setActivityId("")}>
-            전체 활동
-          </ActivityChip>
-          {activities.map((a) => (
-            <ActivityChip key={a.id} selected={activityId === String(a.id)} onClick={() => setActivityId(String(a.id))}>
-              <span aria-hidden="true">{activityEmoji(a.name)}</span> {a.name}
-              <span className="text-xs font-medium opacity-70">정원 {a.capacity}명</span>
+        ) : null}
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div role="group" aria-label="활동 고르기" className="min-w-0 basis-full sm:basis-auto -mx-4 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:thin] sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0">
+            <ActivityChip selected={activityId === ""} onClick={() => setActivityId("")}>
+              전체 활동
             </ActivityChip>
-          ))}
-          {(week || activityId || availableOnly) && (
-            <button type="button" onClick={resetFilters} className="px-2 text-sm font-semibold text-stone-500 underline">
-              조건 지우기
-            </button>
-          )}
+            {activities.map((a) => (
+              <ActivityChip key={a.id} selected={activityId === String(a.id)} onClick={() => setActivityId(String(a.id))}>
+                <span aria-hidden="true">{activityEmoji(a.name)}</span> {a.name}
+                <span className="text-xs font-medium opacity-70">정원 {a.capacity}명</span>
+              </ActivityChip>
+            ))}
+            {(week !== thisWeek || day || activityId || availableOnly) && (
+              <button type="button" onClick={resetFilters} className="shrink-0 whitespace-nowrap px-2 text-sm font-semibold text-stone-500 underline">
+                조건 지우기
+              </button>
+            )}
+          </div>
+          <Toggle checked={availableOnly} onChange={setAvailableOnly} label="신청 가능한 것만 보기" />
         </div>
       </section>
 
@@ -246,7 +263,7 @@ function ActivityChip({
       aria-pressed={selected}
       onClick={onClick}
       disabled={disabled}
-      className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-40 ${
+      className={`inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-3.5 py-1.5 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-40 ${
         selected ? "bg-stone-800 text-white" : "border border-stone-200 bg-white text-stone-600 enabled:hover:text-stone-900"
       }`}
     >
