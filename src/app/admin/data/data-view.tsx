@@ -47,7 +47,7 @@ export default function DataView() {
       <PageTitle title="데이터 관리" description="시연하기 전에 데이터를 처음 상태로 되돌릴 수 있어요." />
 
       <div className="grid max-w-3xl gap-4">
-        <section className="rounded-xl border border-stone-200 bg-white p-6">
+        <section className="rounded-3xl border border-stone-200/70 bg-white shadow-[0_2px_20px_-8px_rgba(120,72,40,0.15)] p-6">
           <h2 className="text-lg font-bold text-stone-900">서버와 DB 상태</h2>
           <div className="mt-3">
             {healthError ? (
@@ -60,12 +60,12 @@ export default function DataView() {
               <Notice tone="error">DB에 연결할 수 없어요.</Notice>
             )}
           </div>
-          <a href={`${API_URL}/health`} target="_blank" rel="noreferrer" className="mt-3 inline-block text-sm font-semibold text-orange-700 underline">
+          <a href={`${API_URL}/health`} target="_blank" rel="noreferrer" className="mt-3 inline-block text-sm font-semibold text-brand-700 underline">
             /health 직접 열어 보기
           </a>
         </section>
 
-        <section className="rounded-xl border border-stone-200 bg-white p-6">
+        <section className="rounded-3xl border border-stone-200/70 bg-white shadow-[0_2px_20px_-8px_rgba(120,72,40,0.15)] p-6">
           <h2 className="text-lg font-bold text-stone-900">가상 데이터 다시 채우기</h2>
           <p className="mt-2 text-sm text-stone-600">
             모든 일정·봉사자·신청을 지우고, 오늘을 기준으로 앞뒤 2주의 일정과 가상 봉사자 30명, 신청 약 120건을 다시 넣어요. 이름과

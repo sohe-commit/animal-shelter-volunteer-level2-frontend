@@ -65,7 +65,7 @@ export default function StatsView() {
 
 function StatCard({ label, value, sub, extra }: { label: string; value: string; sub?: ReactNode; extra?: boolean }) {
   return (
-    <div className="rounded-xl border border-stone-200 bg-white p-5">
+    <div className="rounded-3xl border border-stone-200/70 bg-white shadow-[0_2px_20px_-8px_rgba(120,72,40,0.15)] p-5">
       <p className="flex items-center gap-2 text-sm font-semibold text-stone-500">
         {label}
         {extra && <span className="rounded bg-stone-100 px-1.5 py-0.5 text-[10px] text-stone-500">추가</span>}

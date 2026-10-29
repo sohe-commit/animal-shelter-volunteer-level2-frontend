@@ -7,19 +7,20 @@ export function WeekPicker<W extends Week>({
   value,
   onChange,
   detail,
+  allLabel = "전체",
 }: {
   weeks: W[];
   value: string;
   onChange: (start: string) => void;
-  /** 버튼 아래 작은 글씨 (예: "신청 가능 12개") */
+  /** 버튼 옆 작은 표시 (예: "12개 가능") */
   detail?: (week: W) => string;
+  allLabel?: string;
 }) {
   const options = [
-    { key: "", label: "전체", sub: "모든 주", extra: "" },
+    { key: "", label: allLabel, extra: "" },
     ...weeks.map((week, index) => ({
       key: week.start,
-      label: weekLabel(index),
-      sub: `${formatShortDate(week.start)}~${formatShortDate(week.end)}`,
+      label: `${weekLabel(index)} (${formatShortDate(week.start)}~${formatShortDate(week.end)})`,
       extra: detail?.(week) ?? "",
     })),
   ];
@@ -27,22 +28,28 @@ export function WeekPicker<W extends Week>({
     <div role="group" aria-label="주 고르기" className="flex flex-wrap gap-2">
       {options.map((option) => {
         const selected = value === option.key;
-        const subClass = `text-xs ${selected ? "text-orange-100" : "text-stone-500"}`;
         return (
           <button
             key={option.key || "all"}
             type="button"
             aria-pressed={selected}
             onClick={() => onChange(option.key)}
-            className={`flex min-w-24 flex-col items-center rounded-lg border px-3 py-2 text-sm transition ${
+            className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold transition ${
               selected
-                ? "border-orange-600 bg-orange-600 text-white"
-                : "border-stone-300 bg-white text-stone-700 hover:border-orange-300 hover:bg-orange-50"
+                ? "border-brand-600 bg-brand-600 text-white shadow-sm"
+                : "border-stone-200 bg-white text-stone-600 hover:border-brand-200 hover:text-stone-900"
             }`}
           >
-            <span className="font-semibold">{option.label}</span>
-            <span className={subClass}>{option.sub}</span>
-            {detail && <span className={subClass}>{option.extra || " "}</span>}
+            {option.label}
+            {option.extra && (
+              <span
+                className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${
+                  selected ? "bg-white/20 text-white" : "bg-amber-50 text-amber-800"
+                }`}
+              >
+                {option.extra}
+              </span>
+            )}
           </button>
         );
       })}

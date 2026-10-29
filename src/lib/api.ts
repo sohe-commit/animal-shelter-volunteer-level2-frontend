@@ -29,6 +29,22 @@ export interface Schedule {
   canApply: boolean;
   cancelDeadline: string;
   canCancelAfterApply: boolean;
+  /** 담당자가 지운(취소한) 일정 */
+  isCancelled: boolean;
+  cancelReason: string | null;
+}
+
+/** 담당자가 보는 일정의 신청자 명단 한 줄 */
+export interface RosterEntry {
+  id: number;
+  status: "applied" | "cancelled";
+  createdAt: string;
+  cancelledAt: string | null;
+  cancelledBy: "volunteer" | "staff" | null;
+  cancelReason: string | null;
+  name: string;
+  phone: string;
+  isMinor: boolean;
 }
 
 export interface MyApplication {
@@ -46,6 +62,12 @@ export interface MyApplication {
   canCancel: boolean;
   /** 봉사 날짜가 속한 주의 일요일 */
   weekStart: string;
+  givesCertificate: boolean;
+  /** 끝난 봉사라 봉사 인정 증서를 볼 수 있는지 */
+  canGetCertificate: boolean;
+  /** 누가 취소했는지: 봉사자 본인 / 담당자(일정 삭제) */
+  cancelledBy: "volunteer" | "staff" | null;
+  cancelReason: string | null;
 }
 
 /** 화면에서 고를 수 있는 주 (일~토) */
@@ -72,6 +94,7 @@ export interface MonthlyRecord {
 
 export interface LookupResult {
   found: boolean;
+  isMinor: boolean;
   weeks: WeekUsage[];
   monthly: MonthlyRecord[];
   applications: MyApplication[];

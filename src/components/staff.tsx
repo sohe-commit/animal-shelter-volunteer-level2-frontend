@@ -5,6 +5,9 @@ import { Notice, buttonClass, inputClass } from "@/components/ui";
 import { api, errorMessage } from "@/lib/api";
 import { setStaffPassword, useIsStaff } from "@/lib/staff";
 
+// 과제 확인용으로 공개하는 시연용 비밀번호. 서버(Render)의 STAFF_PASSWORD와 같아야 한다.
+const DEMO_STAFF_PASSWORD = "ongi-demo-1234";
+
 /** 담당자 비밀번호를 넣는 작은 폼. 맞으면 담당자 모드가 켜진다. */
 export function StaffLoginForm({ onDone }: { onDone?: () => void }) {
   const [password, setPassword] = useState("");
@@ -44,6 +47,7 @@ export function StaffLoginForm({ onDone }: { onDone?: () => void }) {
       <button type="submit" disabled={checking || !password} className={`${buttonClass} w-full`}>
         {checking ? "확인하는 중…" : "담당자 모드 켜기"}
       </button>
+      <p className="text-xs text-stone-500">시연용 담당자 비밀번호: {DEMO_STAFF_PASSWORD}</p>
     </form>
   );
 }
@@ -53,7 +57,7 @@ export function StaffOnly({ children }: { children: ReactNode }) {
   const isStaff = useIsStaff();
   if (isStaff) return <>{children}</>;
   return (
-    <div className="mx-auto max-w-sm rounded-xl border border-stone-200 bg-white p-6">
+    <div className="mx-auto max-w-sm rounded-3xl border border-stone-200/70 bg-white shadow-[0_2px_20px_-8px_rgba(120,72,40,0.15)] p-6">
       <h1 className="text-lg font-bold text-stone-900">담당자만 볼 수 있는 화면이에요</h1>
       <p className="mt-1 mb-4 text-sm text-stone-600">담당자 비밀번호를 넣으면 담당자 모드로 바뀌어요.</p>
       <StaffLoginForm />

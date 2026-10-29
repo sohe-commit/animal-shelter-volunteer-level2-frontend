@@ -1,14 +1,26 @@
 @import "tailwindcss";
 
 :root {
-  --background: #fafaf9;
-  --foreground: #1c1917;
+  --background: #fbf8f3;
+  --foreground: #1f1a17;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", "맑은 고딕", system-ui, sans-serif;
+  --font-sans: "Pretendard Variable", "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", "맑은 고딕", system-ui, sans-serif;
+
+  /* 따뜻한 테라코타 색 (주 색) */
+  --color-brand-50: #fdf4ef;
+  --color-brand-100: #fbe6db;
+  --color-brand-200: #f4c9b4;
+  --color-brand-300: #e9a587;
+  --color-brand-400: #db7c58;
+  --color-brand-500: #c75c37;
+  --color-brand-600: #a9442a;
+  --color-brand-700: #8d3622;
+  --color-brand-800: #712d1f;
+  --color-brand-900: #5c271c;
 }
 
 body {
@@ -16,4 +28,20 @@ body {
   color: var(--foreground);
   font-family: var(--font-sans);
   word-break: keep-all;
+}
+
+/* 봉사 인정 증서를 인쇄할 때는 증서만 종이에 나오게 한다. */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  .certificate,
+  .certificate * {
+    visibility: visible;
+  }
+  .certificate {
+    position: absolute;
+    inset: 0;
+    margin: 0 auto;
+  }
 }

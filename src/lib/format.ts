@@ -55,13 +55,35 @@ export function addDays(date: string, days: number): string {
 
 /** 활동마다 다른 색 */
 export const ACTIVITY_COLORS: Record<string, string> = {
-  산책: "bg-emerald-100 text-emerald-800",
-  청소: "bg-sky-100 text-sky-800",
-  목욕: "bg-cyan-100 text-cyan-800",
-  미용: "bg-pink-100 text-pink-800",
-  사진: "bg-amber-100 text-amber-800",
+  산책: "bg-emerald-50 text-emerald-800",
+  청소: "bg-sky-50 text-sky-800",
+  목욕: "bg-cyan-50 text-cyan-800",
+  미용: "bg-pink-50 text-pink-800",
+  사진: "bg-amber-50 text-amber-800",
 };
+
+const ACTIVITY_EMOJIS: Record<string, string> = { 산책: "🐕", 청소: "🧹", 목욕: "🛁", 미용: "✂️", 사진: "📷" };
+
+export function activityEmoji(name: string): string {
+  return ACTIVITY_EMOJIS[name] ?? "🐾";
+}
+
+/** 오늘부터 며칠 남았는지: D-3, D-day */
+export function dDay(date: string, today: string): string {
+  const days = Math.round((Date.parse(date) - Date.parse(today)) / 86_400_000);
+  if (days === 0) return "D-day";
+  return days > 0 ? `D-${days}` : `D+${-days}`;
+}
 
 export function activityColor(name: string): string {
   return ACTIVITY_COLORS[name] ?? "bg-stone-100 text-stone-800";
+}
+
+/** 미성년자 봉사자에게 보여 주는 안내 */
+export const MINOR_NOTICE = "미성년자는 봉사하는 날 보호자 동의서를 꼭 가져와 주세요. (동의서 양식은 보호소 입구에서 받을 수 있어요.)";
+
+/** 봉사 시간(시간 단위): 10:00 ~ 14:00 → 4 */
+export function serviceHours(startTime: string, endTime: string): number {
+  const minutes = (t: string) => Number(t.slice(0, 2)) * 60 + Number(t.slice(3, 5));
+  return Math.round(((minutes(endTime) - minutes(startTime)) / 60) * 10) / 10;
 }
